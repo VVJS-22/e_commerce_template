@@ -1,0 +1,43 @@
+# 🚀 Quick Gmail Setup (3 Steps)
+
+## Step 1: Get App Password
+
+Visit: https://myaccount.google.com/apppasswords
+
+(Enable 2FA first: https://myaccount.google.com/security)
+
+Copy the 16-character password
+
+---
+
+## Step 2: Update .env
+
+```bash
+cd /home/jayesh-16632/ecom/backend
+nano .env
+```
+
+Add:
+```env
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=your@gmail.com
+EMAIL_PASSWORD=abcd efgh ijkl mnop
+EMAIL_FROM=Your App <your@gmail.com>
+```
+
+Save: Ctrl+X, Y, Enter
+
+---
+
+## Step 3: Test
+
+```bash
+node test-email.js your@gmail.com
+```
+
+✅ Done! 500 emails/day, $0 cost.
+
+---
+
+📖 **Detailed guide**: GMAIL_SETUP.md

@@ -1,0 +1,150 @@
+/* Mobile-first dashboard styles */
+
+.dashboard-container {
+  min-height: 100vh;
+  padding: 16px;
+  background: #f5f5f5;
+}
+
+.dashboard-card {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+}
+
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.user-avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  margin-bottom: 8px !important;
+  font-size: 24px !important;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.dashboard-content {
+  margin-bottom: 24px;
+}
+
+.info-card {
+  border-radius: 8px;
+  height: 100%;
+}
+
+.info-card .ant-card-body {
+  padding: 16px;
+}
+
+.info-card h4 {
+  margin-bottom: 16px !important;
+  font-size: 18px !important;
+  color: #1a1a1a;
+}
+
+.info-item {
+  margin-bottom: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.dashboard-footer {
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.dashboard-footer .ant-btn {
+  border-radius: 8px;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Tablet and up */
+@media (min-width: 768px) {
+  .dashboard-container {
+    padding: 24px;
+  }
+
+  .dashboard-card {
+    padding: 24px;
+  }
+
+  .dashboard-title {
+    font-size: 28px !important;
+  }
+
+  .user-avatar {
+    width: 80px !important;
+    height: 80px !important;
+    font-size: 32px !important;
+  }
+
+  .info-card .ant-card-body {
+    padding: 20px;
+  }
+
+  .dashboard-footer .ant-btn {
+    max-width: 300px;
+    margin: 0 auto;
+    display: block;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .dashboard-container {
+    padding: 32px;
+  }
+
+  .dashboard-card {
+    padding: 32px;
+  }
+
+  .dashboard-title {
+    font-size: 32px !important;
+  }
+
+  .user-avatar {
+    width: 96px !important;
+    height: 96px !important;
+    font-size: 40px !important;
+  }
+
+  .info-card .ant-card-body {
+    padding: 24px;
+  }
+}
+
+/* Hover effects */
+.info-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  transition: all 0.3s ease;
+}
+
+/* Button in info cards */
+.info-card .ant-btn-link {
+  padding: 4px 0;
+  height: auto;
+  text-align: left;
+}

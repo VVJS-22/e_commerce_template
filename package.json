@@ -1,0 +1,15 @@
+{
+  "name": "ecom-mern-app",
+  "version": "1.0.0",
+  "description": "Full-stack E-commerce application with MERN stack and authentication",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev-backend": "cd backend && npm run dev",
+    "dev-frontend": "cd frontend && npm run dev",
+    "start-backend": "cd backend && npm start",
+    "build-frontend": "cd frontend && npm run build"
+  },
+  "keywords": ["mern", "ecommerce", "react", "nodejs", "mongodb", "authentication"],
+  "author": "",
+  "license": "ISC"
+}
