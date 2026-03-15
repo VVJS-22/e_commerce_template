@@ -10,6 +10,7 @@
     "start": "NODE_ENV=production node server.js",
     "start:dist": "NODE_ENV=production node dist/index.js",
     "build": "ncc build server.js -o dist --minify --source-map",
+    "build:full": "cd ../frontend && npm install && npm run build && cd ../backend && npm install",
     "dev": "nodemon server.js",
     "seed": "node seed.js"
   },

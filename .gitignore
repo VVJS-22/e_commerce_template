@@ -2,7 +2,6 @@
 node_modules/
 backend/node_modules/
 frontend/node_modules/
-frontend/dist/
 
 # Ignore environment files
 .env
@@ -31,7 +30,8 @@ yarn-error.log*
 build/
 dist/
 
-# But include backend production dist (bundled server)
+# But include production dist (pre-built locally)
 !backend/dist/
+!frontend/dist/
 backend/dist/logs/
 backend/dist/*.map

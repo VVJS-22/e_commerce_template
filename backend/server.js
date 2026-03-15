@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -77,13 +78,26 @@ app.use('/api/admin', adminRoutes);
 // Upload routes: 20 uploads / 15 min
 app.use('/api/upload', uploadLimiter, uploadRoutes);
 
-// Basic route
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'E-commerce API is running'
+// ─── Serve frontend in production ──────────────────────────
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from frontend dist
+  // Works from both server.js and dist/index.js (cwd is always backend/)
+  const frontendDist = path.resolve(process.cwd(), '..', 'frontend', 'dist');
+  app.use(express.static(frontendDist));
+
+  // All non-API routes → serve index.html (SPA client-side routing)
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDist, 'index.html'));
   });
-});
+} else {
+  // Dev: simple health check route
+  app.get('/', (req, res) => {
+    res.json({
+      success: true,
+      message: 'E-commerce API is running'
+    });
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 
