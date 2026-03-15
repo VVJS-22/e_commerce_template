@@ -28,6 +28,9 @@ const ForgotPassword = () => {
     return (
       <div className="auth-container">
         <Card className="auth-card">
+          <div className="auth-logo">
+            <div className="auth-logo-image" role="img" aria-label="Crazy Wheelz Diecast" />
+          </div>
           <Title level={2} className="auth-title">Check Your Email</Title>
           <Text type="secondary" className="auth-subtitle">
             We've sent you a password reset link. Please check your email inbox and follow the instructions.
@@ -43,6 +46,9 @@ const ForgotPassword = () => {
   return (
     <div className="auth-container">
       <Card className="auth-card">
+        <div className="auth-logo">
+          <div className="auth-logo-image" role="img" aria-label="Crazy Wheelz Diecast" />
+        </div>
         <Title level={2} className="auth-title">Forgot Password?</Title>
         <Text type="secondary" className="auth-subtitle">
           Enter your email and we'll send you a reset link

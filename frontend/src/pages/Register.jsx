@@ -39,6 +39,9 @@ const Register = () => {
     return (
       <div className="auth-container">
         <Card className="auth-card">
+          <div className="auth-logo">
+            <div className="auth-logo-image" role="img" aria-label="Crazy Wheelz Diecast" />
+          </div>
           <Result
             status="success"
             title="Check Your Email"
@@ -67,6 +70,9 @@ const Register = () => {
   return (
     <div className="auth-container">
       <Card className="auth-card">
+        <div className="auth-logo">
+          <div className="auth-logo-image" role="img" aria-label="Crazy Wheelz Diecast" />
+        </div>
         <Title level={2} className="auth-title">Create Account</Title>
         <Text type="secondary" className="auth-subtitle">
           Sign up to get started
