@@ -28,15 +28,13 @@ const sendEmail = async (options) => {
     // Create transporter
     const transporter = nodemailer.createTransport(transporterConfig);
     
-    // Verify transporter connection (optional, good for debugging)
-    if (process.env.NODE_ENV === 'development') {
-      try {
-        await transporter.verify();
-        logger.debug('SMTP transporter verified successfully');
-      } catch (error) {
-        logger.error('SMTP transporter verification failed:', error.message);
-        throw new Error('Email service configuration error. Please check your email settings.');
-      }
+    // Verify transporter connection
+    try {
+      await transporter.verify();
+      logger.debug('SMTP transporter verified successfully');
+    } catch (error) {
+      logger.error('SMTP transporter verification failed:', error.message);
+      throw new Error('Email service configuration error. Please check your email settings.');
     }
     
     // Define email options
