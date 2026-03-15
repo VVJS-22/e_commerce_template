@@ -14,14 +14,15 @@ const sendEmail = async (options) => {
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASSWORD
-      }
+      },
+      connectionTimeout: 10000, // 10s connection timeout
+      socketTimeout: 10000,     // 10s socket timeout
     };
     
-    // Add TLS configuration for port 587
+    // TLS configuration — let Node.js auto-negotiate ciphers
     if (process.env.EMAIL_PORT === '587') {
       transporterConfig.tls = {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false // For development only
+        rejectUnauthorized: false
       };
     }
     
