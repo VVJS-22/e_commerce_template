@@ -1,27 +1,49 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message, Checkbox } from 'antd';
+import { Form, Input, Button, Card, Typography, message, Alert } from 'antd';
 import { MailOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import authService from '../services/authService';
 import '../styles/auth.css';
 
 const { Title, Text } = Typography;
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState(null);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const onFinish = async (values) => {
     try {
       setLoading(true);
+      setUnverifiedEmail(null);
       await login({ email: values.email, password: values.password });
       message.success('Login successful!');
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
-      message.error(error.response?.data?.message || 'Login failed');
+      const data = error.response?.data;
+      if (data?.emailNotVerified) {
+        setUnverifiedEmail(values.email);
+      } else {
+        message.error(data?.message || 'Login failed');
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!unverifiedEmail) return;
+    try {
+      setResending(true);
+      await authService.resendVerification(unverifiedEmail);
+      message.success('Verification email sent! Check your inbox.');
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Failed to resend verification email');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -33,12 +55,36 @@ const Login = () => {
           Sign in to your account
         </Text>
         
+        {unverifiedEmail && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16, textAlign: 'left' }}
+            message="Email not verified"
+            description={
+              <div>
+                <p style={{ margin: '4px 0 8px' }}>
+                  Please verify your email before logging in. Check your inbox for the verification link.
+                </p>
+                <Button
+                  type="link"
+                  size="small"
+                  loading={resending}
+                  onClick={handleResendVerification}
+                  style={{ padding: 0 }}
+                >
+                  Resend verification email
+                </Button>
+              </div>
+            }
+          />
+        )}
+        
         <Form
           name="login"
           onFinish={onFinish}
           layout="vertical"
           className="auth-form"
-          initialValues={{ remember: true }}
         >
           <Form.Item
             name="email"
@@ -66,10 +112,7 @@ const Login = () => {
           </Form.Item>
 
           <Form.Item>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Form.Item name="remember" valuePropName="checked" noStyle>
-                <Checkbox>Remember me</Checkbox>
-              </Form.Item>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Link to="/forgot-password">Forgot password?</Link>
             </div>
           </Form.Item>

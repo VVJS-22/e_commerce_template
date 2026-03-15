@@ -32,7 +32,10 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const data = await authService.register(userData);
-    setUser(data.user);
+    // Only set user if token was returned (whitelisted emails auto-login)
+    if (data.token) {
+      setUser(data.user);
+    }
     return data;
   };
 

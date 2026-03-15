@@ -1,7 +1,11 @@
 const User = require('../models/User');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
+const { verificationEmail } = require('../utils/emailTemplates/verificationEmail');
 const logger = require('../utils/logger');
+
+// Helper: check if email is whitelisted (auto-verified)
+const isWhitelistedEmail = (email) => email.toLowerCase().endsWith('@test.com');
 
 // @desc    Register user
 // @route   POST /api/auth/register
@@ -32,15 +36,48 @@ exports.register = async (req, res) => {
       });
     }
     
+    // Auto-verify whitelisted emails (@test.com)
+    const whitelisted = isWhitelistedEmail(email);
+    
     // Create user
     const user = await User.create({
       name,
       email,
-      password
+      password,
+      emailVerified: whitelisted
     });
     
-    logger.info(`User registered successfully: ${email}`);
-    sendTokenResponse(user, 201, res);
+    if (whitelisted) {
+      logger.info(`User registered (whitelisted, auto-verified): ${email}`);
+      return sendTokenResponse(user, 201, res);
+    }
+    
+    // Generate verification token and send email
+    const verificationToken = user.getEmailVerificationToken();
+    await user.save({ validateBeforeSave: false });
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const verifyUrl = `${frontendUrl}/verify-email/${verificationToken}`;
+    
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Verify Your Email - Crazy Wheelz Diecast',
+        message: verificationEmail(user.name, verifyUrl)
+      });
+      
+      logger.info(`Verification email sent to: ${email}`);
+    } catch (emailErr) {
+      logger.error(`Failed to send verification email to ${email}: ${emailErr.message}`);
+      // Don't fail registration if email fails — user can resend later
+    }
+    
+    logger.info(`User registered (verification required): ${email}`);
+    res.status(201).json({
+      success: true,
+      requiresVerification: true,
+      message: 'Registration successful! Please check your email to verify your account.'
+    });
   } catch (error) {
     logger.error(`Registration error for ${req.body.email}: ${error.message}`, { stack: error.stack });
     res.status(500).json({
@@ -87,6 +124,16 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
+      });
+    }
+    
+    // Check if email is verified
+    if (!user.emailVerified) {
+      logger.warn(`Login failed - email not verified: ${email}`);
+      return res.status(403).json({
+        success: false,
+        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+        emailNotVerified: true
       });
     }
     
@@ -234,6 +281,177 @@ exports.logout = async (req, res) => {
     success: true,
     message: 'User logged out successfully'
   });
+};
+
+// @desc    Verify email token
+// @route   GET /api/auth/verify-email/:token
+// @access  Public
+exports.verifyEmail = async (req, res) => {
+  try {
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      emailVerificationToken: hashedToken,
+      emailVerificationExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification link'
+      });
+    }
+
+    user.emailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+
+    logger.info(`Email verified for: ${user.email}`);
+    res.status(200).json({
+      success: true,
+      message: 'Email verified successfully! You can now log in.'
+    });
+  } catch (error) {
+    logger.error(`Email verification error: ${error.message}`, { stack: error.stack });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Resend verification email
+// @route   POST /api/auth/resend-verification
+// @access  Public
+exports.resendVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide an email address'
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      // Don't reveal if user exists — generic success
+      return res.status(200).json({
+        success: true,
+        message: 'If an account exists with this email, a verification link has been sent.'
+      });
+    }
+
+    if (user.emailVerified) {
+      return res.status(400).json({
+        success: false,
+        message: 'This email is already verified. Please log in.'
+      });
+    }
+
+    const verificationToken = user.getEmailVerificationToken();
+    await user.save({ validateBeforeSave: false });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const verifyUrl = `${frontendUrl}/verify-email/${verificationToken}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Verify Your Email - Crazy Wheelz Diecast',
+        message: verificationEmail(user.name, verifyUrl)
+      });
+      logger.info(`Resent verification email to: ${email}`);
+    } catch (emailErr) {
+      logger.error(`Failed to resend verification email to ${email}: ${emailErr.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email. Please try again later.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'If an account exists with this email, a verification link has been sent.'
+    });
+  } catch (error) {
+    logger.error(`Resend verification error: ${error.message}`, { stack: error.stack });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+// @desc    Delete user account
+// @route   DELETE /api/auth/delete-account
+// @access  Private
+exports.deleteAccount = async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    if (!password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide your password to confirm account deletion'
+      });
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Incorrect password'
+      });
+    }
+
+    // Release any active stock reservations
+    const StockReservation = require('../models/StockReservation');
+    const Product = require('../models/Product');
+    const activeReservations = await StockReservation.find({
+      user: user._id,
+      status: 'active'
+    });
+
+    for (const reservation of activeReservations) {
+      for (const item of reservation.items) {
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: item.quantity }
+        });
+      }
+      reservation.status = 'released';
+      await reservation.save();
+    }
+
+    await User.findByIdAndDelete(user._id);
+
+    logger.info(`Account deleted: ${user.email}`);
+    res.status(200).json({
+      success: true,
+      message: 'Account deleted successfully'
+    });
+  } catch (error) {
+    logger.error(`Delete account error: ${error.message}`, { stack: error.stack });
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
 };
 
 // Helper function to get token from model, create cookie and send response

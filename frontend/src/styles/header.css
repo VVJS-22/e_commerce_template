@@ -1,0 +1,138 @@
+.app-header {
+  background: #fff;
+  padding: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 64px;
+  line-height: 64px;
+}
+
+.header-content {
+  max-width: 100%;
+  margin: 0;
+  padding: 0 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  cursor: pointer;
+}
+
+.logo-image {
+  width: 120px;
+  height: 90px;
+  background-image: url('/assets/images/logo.png');
+  /* Sprite is 2x2 grid; show top-right quarter (the clean horizontal logo) */
+  background-size: 200% 200%;
+  background-position: 100% 0%;
+  background-repeat: no-repeat;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 40px;
+  min-height: 40px;
+}
+
+.icon-wrapper:hover {
+  opacity: 0.7;
+}
+
+.header-icon {
+  font-size: 24px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-icon {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.cart-badge .ant-badge-count {
+  background-color: #ff4d4f;
+  font-weight: 600;
+  top: 4px;
+}
+
+.user-profile {
+  padding: 4px;
+}
+
+.user-avatar {
+  background-color: #1890ff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-avatar:hover {
+  transform: scale(1.1);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0 16px;
+  }
+
+  .logo-image {
+    width: 100px;
+    height: 40px;
+  }
+
+  .header-icon {
+    font-size: 20px;
+  }
+
+  .header-actions {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-content {
+    padding: 0 12px;
+  }
+
+  .logo-image {
+    width: 90px;
+    height: 36px;
+  }
+
+  .header-icon {
+    font-size: 18px;
+  }
+
+  .header-actions .ant-space-item {
+    margin-right: 8px !important;
+  }
+}
+

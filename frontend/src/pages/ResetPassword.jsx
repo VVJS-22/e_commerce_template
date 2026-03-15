@@ -17,7 +17,7 @@ const ResetPassword = () => {
       setLoading(true);
       await authService.resetPassword(token, values.password);
       message.success('Password reset successful!');
-      navigate('/dashboard');
+      navigate('/');
     } catch (error) {
       message.error(error.response?.data?.message || 'Failed to reset password');
     } finally {

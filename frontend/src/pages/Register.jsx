@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
+import { Form, Input, Button, Card, Typography, message, Result } from 'antd';
 import { UserOutlined, MailOutlined, LockOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -9,21 +9,60 @@ const { Title, Text } = Typography;
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const onFinish = async (values) => {
     try {
       setLoading(true);
-      await register(values);
-      message.success('Registration successful!');
-      navigate('/dashboard');
+      const data = await register(values);
+      
+      if (data.requiresVerification) {
+        // Non-whitelisted email — show verification screen
+        setRegisteredEmail(values.email);
+        setVerificationSent(true);
+      } else {
+        // Whitelisted email — auto-verified, logged in
+        message.success('Registration successful!');
+        navigate('/');
+      }
     } catch (error) {
       message.error(error.response?.data?.message || 'Registration failed');
     } finally {
       setLoading(false);
     }
   };
+
+  if (verificationSent) {
+    return (
+      <div className="auth-container">
+        <Card className="auth-card">
+          <Result
+            status="success"
+            title="Check Your Email"
+            subTitle={
+              <>
+                We've sent a verification link to <strong>{registeredEmail}</strong>.
+                <br />
+                Please click the link to verify your account before logging in.
+                <br /><br />
+                <Text type="secondary" style={{ fontSize: 13 }}>
+                  The link expires in 24 hours. Check your spam folder if you don't see it.
+                </Text>
+              </>
+            }
+            extra={[
+              <Button type="primary" key="login" onClick={() => navigate('/login')}>
+                Go to Login
+              </Button>
+            ]}
+          />
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="auth-container">

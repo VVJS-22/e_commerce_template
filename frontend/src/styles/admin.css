@@ -1,0 +1,175 @@
+/* ─── Admin Layout ──────────────────────────────── */
+
+.admin-layout {
+  min-height: 100vh;
+  background: #f5f6fa;
+}
+
+/* ─── Desktop Sidebar ──────────────────────────── */
+
+.admin-sider {
+  background: #fff !important;
+  border-right: 1px solid #f0f0f0;
+  display: none;
+}
+
+.admin-sider-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.admin-sider-header h3 {
+  margin: 8px 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+@media (min-width: 768px) {
+  .admin-sider {
+    display: block !important;
+  }
+  .admin-topbar,
+  .admin-tabs {
+    display: none !important;
+  }
+}
+
+/* ─── Mobile Top Bar ───────────────────────────── */
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.admin-topbar-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+
+/* ─── Mobile Tabs ──────────────────────────────── */
+
+.admin-tabs {
+  display: flex;
+  gap: 0;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+  position: sticky;
+  top: 48px;
+  z-index: 9;
+  overflow-x: auto;
+}
+
+.admin-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border: none;
+  background: none;
+  font-size: 11px;
+  color: #888;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.admin-tab.active {
+  color: #1890ff;
+  border-bottom-color: #1890ff;
+  font-weight: 600;
+}
+
+.admin-tab .anticon {
+  font-size: 16px;
+}
+
+/* ─── Back Button ──────────────────────────────── */
+
+.admin-back-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #1890ff;
+  cursor: pointer;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ─── Content Area ─────────────────────────────── */
+
+.admin-content {
+  padding: 16px;
+  background: #f5f6fa;
+  min-height: calc(100vh - 100px);
+}
+
+@media (min-width: 768px) {
+  .admin-content {
+    padding: 24px;
+  }
+}
+
+/* ─── Admin Page (shared) ──────────────────────── */
+
+.admin-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-page-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #333;
+}
+
+/* Compact table styles */
+.admin-page .ant-table {
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.admin-page .ant-table-thead > tr > th {
+  background: #fafafa !important;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #888;
+}
+
+/* ─── Responsive helpers ───────────────────────── */
+.admin-desktop-only {
+  display: block;
+}
+.admin-mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .admin-desktop-only {
+    display: none;
+  }
+  .admin-mobile-only {
+    display: block;
+  }
+}
