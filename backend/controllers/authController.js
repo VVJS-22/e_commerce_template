@@ -68,7 +68,7 @@ exports.register = async (req, res) => {
       
       logger.info(`Verification email sent to: ${email}`);
     } catch (emailErr) {
-      logger.error(`Failed to send verification email to ${email}: ${emailErr.message}`);
+      logger.error(`*** VERIFICATION EMAIL FAILED for ${email}: [${emailErr.code || ''}] ${emailErr.message}`);
       // Don't fail registration if email fails — user can resend later
     }
     

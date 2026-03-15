@@ -2,56 +2,60 @@ const nodemailer = require('nodemailer');
 const logger = require('./logger');
 
 const sendEmail = async (options) => {
+  const port = parseInt(process.env.EMAIL_PORT) || 465;
+  const isSSL = port === 465;
+  const host = process.env.EMAIL_HOST || 'smtp.gmail.com';
+  const user = process.env.EMAIL_USER;
+  const pass = process.env.EMAIL_PASSWORD;
+
+  logger.info(`SMTP config: host=${host}, port=${port}, secure=${isSSL}, user=${user}, passLen=${pass ? pass.length : 0}`);
+
+  if (!host || !user || !pass) {
+    logger.error('SMTP env vars missing! EMAIL_HOST, EMAIL_USER, or EMAIL_PASSWORD is empty.');
+    throw new Error('Email configuration incomplete');
+  }
+
+  const transporterConfig = {
+    host,
+    port,
+    secure: isSSL,
+    auth: { user, pass },
+    connectionTimeout: 30000,
+    greetingTimeout: 30000,
+    socketTimeout: 30000,
+  };
+
+  if (!isSSL) {
+    transporterConfig.tls = { rejectUnauthorized: false };
+  }
+
+  const transporter = nodemailer.createTransport(transporterConfig);
+
+  // Verify SMTP connection
   try {
-    const port = parseInt(process.env.EMAIL_PORT) || 465;
-    const isSSL = port === 465;
+    await transporter.verify();
+    logger.info('SMTP verify OK');
+  } catch (verifyErr) {
+    logger.error(`SMTP verify FAILED: [${verifyErr.code || ''}] ${verifyErr.message}`);
+    // Still attempt to send — some providers fail verify but accept mail
+  }
 
-    logger.info(`SMTP config: host=${process.env.EMAIL_HOST}, port=${port}, secure=${isSSL}, user=${process.env.EMAIL_USER}`);
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || user,
+    to: options.email,
+    subject: options.subject,
+    html: options.message
+  };
 
-    const transporterConfig = {
-      host: process.env.EMAIL_HOST,
-      port,
-      secure: isSSL,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASSWORD
-      },
-      connectionTimeout: 30000,
-      greetingTimeout: 30000,
-      socketTimeout: 30000,
-      logger: false,
-      debug: false,
-    };
+  logger.info(`Attempting sendMail to ${options.email}...`);
 
-    // For STARTTLS (port 587), allow self-signed certs
-    if (!isSSL) {
-      transporterConfig.tls = { rejectUnauthorized: false };
-    }
-
-    const transporter = nodemailer.createTransport(transporterConfig);
-
-    // Non-fatal verify — log warning but still attempt to send
-    try {
-      await transporter.verify();
-      logger.info('SMTP transporter verified successfully');
-    } catch (verifyErr) {
-      logger.warn(`SMTP verify failed (will still attempt send): ${verifyErr.code || ''} ${verifyErr.message}`);
-    }
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: options.email,
-      subject: options.subject,
-      html: options.message
-    };
-
+  try {
     const info = await transporter.sendMail(mailOptions);
-    logger.info(`Email sent via SMTP to ${options.email} - Message ID: ${info.messageId}`);
+    logger.info(`Email SENT to ${options.email} — msgId=${info.messageId}, response=${info.response}`);
     return info;
-
-  } catch (error) {
-    logger.error(`Failed to send email to ${options.email}: [${error.code || 'UNKNOWN'}] ${error.message}`);
-    throw error;
+  } catch (sendErr) {
+    logger.error(`sendMail FAILED to ${options.email}: [${sendErr.code || 'UNKNOWN'}] ${sendErr.message}`);
+    throw sendErr;
   }
 };
 
