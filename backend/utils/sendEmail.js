@@ -26,7 +26,9 @@ const sendEmail = async (options) => {
   };
 
   if (!isSSL) {
-    transporterConfig.tls = { rejectUnauthorized: false };
+    // Port 587: require STARTTLS upgrade — fail if TLS handshake fails
+    transporterConfig.requireTLS = true;
+    transporterConfig.tls = { minVersion: 'TLSv1.2' };
   }
 
   const transporter = nodemailer.createTransport(transporterConfig);
