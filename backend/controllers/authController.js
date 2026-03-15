@@ -293,10 +293,9 @@ exports.verifyEmail = async (req, res) => {
       .update(req.params.token)
       .digest('hex');
 
-    const user = await User.findOne({
-      emailVerificationToken: hashedToken,
-      emailVerificationExpire: { $gt: Date.now() }
-    });
+    // Look up by token WITHOUT expiry check first
+    // This handles email-client prefetch + user click scenarios
+    const user = await User.findOne({ emailVerificationToken: hashedToken });
 
     if (!user) {
       return res.status(400).json({
@@ -305,9 +304,28 @@ exports.verifyEmail = async (req, res) => {
       });
     }
 
+    // Already verified (email client prefetched the link before user clicked)
+    if (user.emailVerified) {
+      // Now safe to clear the token
+      user.emailVerificationToken = undefined;
+      user.emailVerificationExpire = undefined;
+      await user.save({ validateBeforeSave: false });
+      return res.status(200).json({
+        success: true,
+        message: 'Email verified successfully! You can now log in.'
+      });
+    }
+
+    // Check if token has expired
+    if (user.emailVerificationExpire < Date.now()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification link has expired. Please request a new one.'
+      });
+    }
+
+    // Verify the email — keep token so a second request can still find the user
     user.emailVerified = true;
-    user.emailVerificationToken = undefined;
-    user.emailVerificationExpire = undefined;
     await user.save({ validateBeforeSave: false });
 
     logger.info(`Email verified for: ${user.email}`);
