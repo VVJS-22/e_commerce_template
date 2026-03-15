@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:5000/api';
+// Use relative URL — works in both dev (Vite proxy) and production (same origin)
+const API_BASE = '/api';
 
 // Normalize MongoDB _id → id for frontend consistency
 const normalize = (doc) => {

@@ -34,7 +34,18 @@ const app = express();
 // ─── Security middleware ────────────────────────────────────
 
 // Set security HTTP headers (XSS, content-type sniffing, clickjacking, etc.)
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'", "https:", "data:"],
+    },
+  },
+}));
 
 // Body parser with size limits to prevent large payload attacks
 app.use(express.json({ limit: '10kb' }));

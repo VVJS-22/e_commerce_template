@@ -117,7 +117,7 @@ const CheckoutPage = () => {
     const handleBeforeUnload = () => {
       if (reservationId && !releasedRef.current && !orderPlacedRef.current) {
         navigator.sendBeacon(
-          'http://localhost:5000/api/orders/release-stock-beacon',
+          '/api/orders/release-stock-beacon',
           new Blob(
             [JSON.stringify({ reservationId })],
             { type: 'application/json' }
