@@ -30,3 +30,8 @@ yarn-error.log*
 # Ignore build outputs
 build/
 dist/
+
+# But include backend production dist (bundled server)
+!backend/dist/
+backend/dist/logs/
+backend/dist/*.map
