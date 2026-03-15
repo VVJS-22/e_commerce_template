@@ -93,6 +93,7 @@ const AdminProducts = () => {
       title: 'Category',
       dataIndex: 'category',
       width: 110,
+      responsive: ['md'],
       render: (slug) => catMap[slug] || slug,
       filters: categories.map((c) => ({ text: c.name, value: c.slug })),
       onFilter: (val, record) => record.category === val,
@@ -108,6 +109,7 @@ const AdminProducts = () => {
       title: 'Disc%',
       dataIndex: 'discount',
       width: 65,
+      responsive: ['md'],
       render: (v) => (v > 0 ? <Tag color="red">-{v}%</Tag> : '—'),
     },
     {
@@ -120,6 +122,7 @@ const AdminProducts = () => {
       title: 'Scale',
       dataIndex: 'scale',
       width: 65,
+      responsive: ['lg'],
       filters: [
         { text: '1:64', value: '1:64' },
         { text: '1:43', value: '1:43' },
@@ -134,6 +137,7 @@ const AdminProducts = () => {
       title: 'Status',
       dataIndex: 'isActive',
       width: 80,
+      responsive: ['sm'],
       render: (v) => <Tag color={v ? 'green' : 'default'}>{v ? 'Active' : 'Hidden'}</Tag>,
     },
     {

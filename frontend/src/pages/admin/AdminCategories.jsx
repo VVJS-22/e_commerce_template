@@ -81,12 +81,14 @@ const AdminCategories = () => {
       title: 'Order',
       dataIndex: 'sortOrder',
       width: 70,
+      responsive: ['sm'],
       sorter: (a, b) => a.sortOrder - b.sortOrder,
     },
     {
       title: 'Status',
       dataIndex: 'isActive',
       width: 80,
+      responsive: ['sm'],
       render: (v) => <Tag color={v ? 'green' : 'default'}>{v ? 'Active' : 'Hidden'}</Tag>,
     },
     {

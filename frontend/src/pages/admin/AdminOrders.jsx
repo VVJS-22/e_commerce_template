@@ -84,12 +84,14 @@ const AdminOrders = () => {
       title: 'Customer',
       dataIndex: 'user',
       ellipsis: true,
+      responsive: ['sm'],
       render: (u) => (u ? `${u.name} (${u.email})` : '—'),
     },
     {
       title: 'Items',
       dataIndex: 'items',
       width: 90,
+      responsive: ['md'],
       render: (items) => (
         <div style={{ display: 'flex', gap: 2 }}>
           {items.slice(0, 3).map((item, i) => (
@@ -119,6 +121,7 @@ const AdminOrders = () => {
       title: 'Payment',
       dataIndex: 'paymentMethod',
       width: 90,
+      responsive: ['md'],
       render: (m) => paymentLabels[m] || m,
       filters: Object.entries(paymentLabels).map(([val, text]) => ({ text, value: val })),
       onFilter: (val, record) => record.paymentMethod === val,

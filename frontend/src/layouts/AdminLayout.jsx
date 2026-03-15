@@ -18,7 +18,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <Layout className="admin-layout">
+    <div className="admin-wrapper">
       {/* Mobile top bar */}
       <div className="admin-topbar">
         <button className="admin-back-btn" onClick={() => navigate('/')}>
@@ -41,27 +41,29 @@ const AdminLayout = () => {
         ))}
       </div>
 
-      {/* Desktop sidebar */}
-      <Sider className="admin-sider" width={200} breakpoint="md" collapsedWidth={0} trigger={null}>
-        <div className="admin-sider-header">
-          <button className="admin-back-btn" onClick={() => navigate('/')}>
-            <LeftOutlined /> Back to Store
-          </button>
-          <h3>Admin Panel</h3>
-        </div>
-        <Menu
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{ borderRight: 0 }}
-        />
-      </Sider>
+      <Layout className="admin-layout">
+        {/* Desktop sidebar */}
+        <Sider className="admin-sider" width={200} trigger={null}>
+          <div className="admin-sider-header">
+            <button className="admin-back-btn" onClick={() => navigate('/')}>
+              <LeftOutlined /> Back to Store
+            </button>
+            <h3>Admin Panel</h3>
+          </div>
+          <Menu
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderRight: 0 }}
+          />
+        </Sider>
 
-      <Content className="admin-content">
-        <Outlet />
-      </Content>
-    </Layout>
+        <Content className="admin-content">
+          <Outlet />
+        </Content>
+      </Layout>
+    </div>
   );
 };
 

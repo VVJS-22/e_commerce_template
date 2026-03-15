@@ -261,6 +261,10 @@ exports.resetPassword = async (req, res) => {
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
+    // User proved email ownership by clicking the reset link — mark verified
+    if (!user.emailVerified) {
+      user.emailVerified = true;
+    }
     await user.save();
     
     sendTokenResponse(user, 200, res);

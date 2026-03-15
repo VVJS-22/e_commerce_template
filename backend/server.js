@@ -110,11 +110,30 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// ─── Health check endpoint ─────────────────────────────────
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
   logger.info(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   logger.info(`Backend API available at http://localhost:${PORT}`);
+
+  // ─── Self keep-alive ping (Render free tier) ──────────────
+  if (process.env.RENDER_EXTERNAL_URL) {
+    const INTERVAL = 14 * 60 * 1000; // 14 minutes
+    setInterval(async () => {
+      try {
+        const res = await fetch(`${process.env.RENDER_EXTERNAL_URL}/health`);
+        logger.info(`Keep-alive ping: ${res.status}`);
+      } catch (err) {
+        logger.error(`Keep-alive ping failed: ${err.message}`);
+      }
+    }, INTERVAL);
+    logger.info('Keep-alive self-ping enabled');
+  }
 });
 
 // Cleanup expired stock reservations every 60 seconds
