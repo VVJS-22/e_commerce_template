@@ -4,3 +4,5 @@ node_modules/
 *.log
 logs/*.log
 logs/*.log.*
+dist/logs/
+dist/*.map

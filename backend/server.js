@@ -48,7 +48,16 @@ app.use(hpp({
 }));
 
 // Enable CORS
-app.use(cors());
+const corsOptions = {
+  origin: process.env.NODE_ENV === 'production'
+    ? process.env.FRONTEND_URL
+    : '*',
+  credentials: true,
+};
+app.use(cors(corsOptions));
+
+// Trust proxy (needed for rate limiting behind reverse proxies like Render/Railway)
+app.set('trust proxy', 1);
 
 // Global rate limiter — 100 req / 15 min per IP
 app.use('/api', globalLimiter);
