@@ -61,8 +61,15 @@ const CategoryPage = () => {
         <button className="back-btn" onClick={() => navigate('/')}>
           <LeftOutlined />
         </button>
-        <h2 className="category-title">{category?.name || categoryId}</h2>
-        <span className="category-count">{products.length} items</span>
+        <div className="category-header-content">
+          {category?.image && (
+            <img src={category.image} alt={category.name} className="category-header-icon" />
+          )}
+          <div className="category-header-text">
+            <h2 className="category-title">{category?.name || categoryId}</h2>
+            <span className="category-count">{products.length} {products.length === 1 ? 'product' : 'products'} found</span>
+          </div>
+        </div>
       </div>
 
       <ProductFilters
