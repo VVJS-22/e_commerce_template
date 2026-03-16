@@ -270,6 +270,33 @@ exports.updateOrderStatus = async (req, res) => {
       }
     }
 
+    // Deduct stock when order status changes FROM cancelled TO another status
+    // (This happens when admin reactivates a previously cancelled order)
+    if (prevStatus === 'cancelled' && status !== 'cancelled') {
+      for (const item of order.items) {
+        const product = await Product.findById(item.product);
+        
+        // Check if sufficient stock is available
+        if (!product) {
+          logger.error(`Product not found: ${item.product} for order ${order._id}`);
+          continue;
+        }
+        
+        if (product.stock < item.quantity) {
+          logger.warn(`Insufficient stock for ${product.name}. Required: ${item.quantity}, Available: ${product.stock}`);
+          return res.status(400).json({ 
+            success: false, 
+            message: `Insufficient stock for ${product.name}. Only ${product.stock} units available.` 
+          });
+        }
+
+        await Product.findByIdAndUpdate(item.product, {
+          $inc: { stock: -item.quantity },
+        });
+      }
+      logger.info(`Stock deducted for reactivated order ${order._id}: ${order.items.map(i => `${i.name} x${i.quantity}`).join(', ')}`);
+    }
+
     logger.info(`Order ${order._id} status → ${status} by ${req.user.email}`);
     res.json({ success: true, data: order });
   } catch (err) {

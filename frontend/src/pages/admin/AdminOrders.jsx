@@ -51,8 +51,9 @@ const AdminOrders = () => {
         prev.map((o) => (o._id === orderId ? res.data.data : o))
       );
       message.success(`Order status → ${newStatus}`);
-    } catch {
-      message.error('Failed to update status');
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Failed to update status';
+      message.error(errorMsg);
     }
   };
 
