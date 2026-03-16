@@ -2,6 +2,7 @@ import React from 'react';
 import { Layout } from 'antd';
 import { Outlet, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
+import Footer from '../components/Footer';
 import CategorySlider from '../components/CategorySlider';
 import '../styles/dashboard.css';
 
@@ -15,14 +16,15 @@ const MainLayout = () => {
   };
 
   return (
-    <Layout className="dashboard-layout">
+    <Layout className="dashboard-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Header />
       <CategorySlider onCategorySelect={handleCategorySelect} />
-      <Content className="dashboard-content">
+      <Content className="dashboard-content" style={{ flex: 1 }}>
         <div className="dashboard-container">
           <Outlet />
         </div>
       </Content>
+      <Footer />
     </Layout>
   );
 };
