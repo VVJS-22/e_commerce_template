@@ -23,10 +23,12 @@ const statusOptions = Object.keys(statusConfig).map((s) => ({
 }));
 
 const paymentLabels = {
+  razorpay: 'Paid Online',
+  cod: 'COD',
+  // Legacy labels for older orders
   upi: 'UPI',
   card: 'Card',
   netbanking: 'Netbanking',
-  cod: 'COD',
 };
 
 const AdminOrders = () => {

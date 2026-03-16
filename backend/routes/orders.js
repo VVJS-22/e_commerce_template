@@ -1,6 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { createOrder, getMyOrders, getOrder, reserveStock, releaseStock, releaseStockBeacon } = require('../controllers/orderController');
+const {
+  createOrder,
+  getMyOrders,
+  getOrder,
+  reserveStock,
+  releaseStock,
+  releaseStockBeacon,
+  createRazorpayOrder,
+  verifyPaymentAndCreateOrder,
+} = require('../controllers/orderController');
 const { protect, requireVerifiedEmail } = require('../middleware/auth');
 
 // Beacon route — no auth (used by navigator.sendBeacon on page close)
@@ -12,6 +21,8 @@ router.use(protect); // All other order routes require authentication
 router.post('/', requireVerifiedEmail, createOrder);
 router.post('/reserve-stock', requireVerifiedEmail, reserveStock);
 router.post('/release-stock', releaseStock);
+router.post('/create-razorpay-order', requireVerifiedEmail, createRazorpayOrder);
+router.post('/verify-payment', requireVerifiedEmail, verifyPaymentAndCreateOrder);
 router.get('/my', getMyOrders);
 router.get('/:id', getOrder);
 

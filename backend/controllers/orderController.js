@@ -4,6 +4,8 @@ const StockReservation = require('../models/StockReservation');
 const logger = require('../utils/logger');
 const sendEmail = require('../utils/sendEmail');
 const { customerOrderEmail, adminOrderEmail } = require('../utils/emailTemplates/orderEmails');
+const razorpay = require('../config/razorpay');
+const crypto = require('crypto');
 
 const RESERVATION_TTL_MINUTES = 15;
 
@@ -224,7 +226,159 @@ exports.releaseStock = async (req, res) => {
 
 // ----- ORDERS -----
 
-// @desc    Create a new order (consumes an active reservation)
+// Helper: validate reservation and return it (or send error response)
+const validateReservation = async (reservationId, userId, res) => {
+  if (!reservationId) {
+    res.status(400).json({ success: false, message: 'No stock reservation. Please go back and try again.' });
+    return null;
+  }
+
+  const reservation = await StockReservation.findById(reservationId);
+
+  if (!reservation) {
+    res.status(400).json({ success: false, message: 'Reservation not found. Please go back and try again.' });
+    return null;
+  }
+
+  if (reservation.user.toString() !== userId.toString()) {
+    res.status(403).json({ success: false, message: 'Not authorized' });
+    return null;
+  }
+
+  if (reservation.status !== 'active') {
+    const reservedProductIds = reservation.items.map((i) => i.product);
+    const reservedProducts = await Product.find({ _id: { $in: reservedProductIds } }).select('name');
+    const productNames = reservedProducts.map((p) => p.name).join(', ');
+    res.status(400).json({
+      success: false,
+      message: `"${productNames}" ${reservedProducts.length === 1 ? 'is' : 'are'} currently being checked out by another user. Please update your cart and try again.`,
+    });
+    return null;
+  }
+
+  if (new Date() > reservation.expiresAt) {
+    await restoreStock(reservation.items);
+    reservation.status = 'expired';
+    await reservation.save();
+
+    const reservedProductIds = reservation.items.map((i) => i.product);
+    const reservedProducts = await Product.find({ _id: { $in: reservedProductIds } }).select('name');
+    const productNames = reservedProducts.map((p) => p.name).join(', ');
+    res.status(400).json({
+      success: false,
+      message: `"${productNames}" ${reservedProducts.length === 1 ? 'is' : 'are'} currently being checked out by another user. Please update your cart and try again.`,
+    });
+    return null;
+  }
+
+  return reservation;
+};
+
+// @desc    Create a Razorpay order (for online payments)
+// @route   POST /api/orders/create-razorpay-order
+// @access  Private
+exports.createRazorpayOrder = async (req, res) => {
+  try {
+    const { grandTotal, reservationId } = req.body;
+
+    // Validate reservation is still active
+    const reservation = await validateReservation(reservationId, req.user._id, res);
+    if (!reservation) return;
+
+    const options = {
+      amount: Math.round(grandTotal * 100), // Razorpay expects amount in paise
+      currency: 'INR',
+      receipt: `rcpt_${reservationId}`,
+      notes: {
+        userId: req.user._id.toString(),
+        reservationId: reservationId,
+      },
+    };
+
+    const razorpayOrder = await razorpay.orders.create(options);
+
+    logger.info(`Razorpay order created: ${razorpayOrder.id} for reservation ${reservationId}`);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        orderId: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        keyId: process.env.RAZORPAY_KEY_ID,
+      },
+    });
+  } catch (err) {
+    logger.error(`Create Razorpay order error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Failed to initiate payment' });
+  }
+};
+
+// @desc    Verify Razorpay payment and create order
+// @route   POST /api/orders/verify-payment
+// @access  Private
+exports.verifyPaymentAndCreateOrder = async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      items,
+      shippingAddress,
+      itemsTotal,
+      deliveryCharge,
+      grandTotal,
+      reservationId,
+    } = req.body;
+
+    // 1. Verify signature
+    const body = razorpay_order_id + '|' + razorpay_payment_id;
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .update(body)
+      .digest('hex');
+
+    if (expectedSignature !== razorpay_signature) {
+      logger.warn(`Payment signature mismatch for order ${razorpay_order_id}`);
+      return res.status(400).json({ success: false, message: 'Payment verification failed. Please contact support.' });
+    }
+
+    // 2. Validate reservation
+    const reservation = await validateReservation(reservationId, req.user._id, res);
+    if (!reservation) return;
+
+    // 3. Create the order
+    const order = await Order.create({
+      user: req.user._id,
+      items,
+      shippingAddress,
+      paymentMethod: 'razorpay',
+      paymentStatus: 'paid',
+      razorpayOrderId: razorpay_order_id,
+      razorpayPaymentId: razorpay_payment_id,
+      razorpaySignature: razorpay_signature,
+      itemsTotal,
+      deliveryCharge,
+      grandTotal,
+    });
+
+    // 4. Mark reservation as completed
+    reservation.status = 'completed';
+    await reservation.save();
+
+    logger.info(`Order created (Razorpay): ${order._id} by ${req.user.email} | Payment: ${razorpay_payment_id}`);
+
+    // Send order confirmation emails (non-blocking)
+    sendOrderNotifications(order, req.user);
+
+    res.status(201).json({ success: true, data: order });
+  } catch (err) {
+    logger.error(`Verify payment error: ${err.message}`);
+    res.status(500).json({ success: false, message: 'Failed to verify payment' });
+  }
+};
+
+// @desc    Create a new order — COD (consumes an active reservation)
 // @route   POST /api/orders
 // @access  Private
 exports.createOrder = async (req, res) => {
@@ -235,61 +389,22 @@ exports.createOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: 'No order items' });
     }
 
-    if (!reservationId) {
-      return res.status(400).json({ success: false, message: 'No stock reservation. Please go back and try again.' });
+    // Only COD orders go through this route now
+    if (paymentMethod !== 'cod') {
+      return res.status(400).json({ success: false, message: 'Use the Razorpay payment flow for online payments.' });
     }
 
     // Validate reservation
-    const reservation = await StockReservation.findById(reservationId);
-
-    if (!reservation) {
-      return res.status(400).json({ success: false, message: 'Reservation not found. Please go back and try again.' });
-    }
-
-    if (reservation.user.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ success: false, message: 'Not authorized' });
-    }
-
-    if (reservation.status !== 'active') {
-      // Look up product names for clearer messaging
-      const reservedProductIds = reservation.items.map((i) => i.product);
-      const reservedProducts = await Product.find({ _id: { $in: reservedProductIds } }).select('name');
-      const productNames = reservedProducts.map((p) => p.name).join(', ');
-
-      if (reservation.status === 'expired') {
-        return res.status(400).json({
-          success: false,
-          message: `"${productNames}" ${reservedProducts.length === 1 ? 'is' : 'are'} currently being checked out by another user. Please update your cart and try again.`,
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: `"${productNames}" ${reservedProducts.length === 1 ? 'is' : 'are'} currently being checked out by another user. Please update your cart and try again.`,
-      });
-    }
-
-    if (new Date() > reservation.expiresAt) {
-      // Expired but not yet cleaned up — restore stock and mark expired
-      await restoreStock(reservation.items);
-      reservation.status = 'expired';
-      await reservation.save();
-
-      const reservedProductIds = reservation.items.map((i) => i.product);
-      const reservedProducts = await Product.find({ _id: { $in: reservedProductIds } }).select('name');
-      const productNames = reservedProducts.map((p) => p.name).join(', ');
-
-      return res.status(400).json({
-        success: false,
-        message: `"${productNames}" ${reservedProducts.length === 1 ? 'is' : 'are'} currently being checked out by another user. Please update your cart and try again.`,
-      });
-    }
+    const reservation = await validateReservation(reservationId, req.user._id, res);
+    if (!reservation) return;
 
     // Stock was already deducted during reservation — just create the order
     const order = await Order.create({
       user: req.user._id,
       items,
       shippingAddress,
-      paymentMethod,
+      paymentMethod: 'cod',
+      paymentStatus: 'cod',
       itemsTotal,
       deliveryCharge,
       grandTotal,
@@ -299,7 +414,7 @@ exports.createOrder = async (req, res) => {
     reservation.status = 'completed';
     await reservation.save();
 
-    logger.info(`Order created: ${order._id} by user ${req.user.email} (reservation ${reservationId})`);
+    logger.info(`Order created (COD): ${order._id} by user ${req.user.email} (reservation ${reservationId})`);
 
     // Send order confirmation emails (non-blocking)
     sendOrderNotifications(order, req.user);

@@ -14,10 +14,12 @@ const statusConfig = {
 };
 
 const paymentLabels = {
+  razorpay: 'Paid Online',
+  cod: 'Cash on Delivery',
+  // Legacy labels for older orders
   upi: 'UPI',
   card: 'Card',
   netbanking: 'Net Banking',
-  cod: 'Cash on Delivery',
 };
 
 const OrderHistory = () => {

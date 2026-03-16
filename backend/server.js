@@ -38,11 +38,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'"],
+      scriptSrc: ["'self'", "https://checkout.razorpay.com"],
       styleSrc: ["'self'", "'unsafe-inline'", "https:"],
-      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com"],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "https://rzp.io"],
+      connectSrc: ["'self'", "https://api.razorpay.com", "https://lumberjack.razorpay.com"],
       fontSrc: ["'self'", "https:", "data:"],
+      frameSrc: ["'self'", "https://api.razorpay.com", "https://checkout.razorpay.com"],
     },
   },
 }));

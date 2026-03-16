@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircleOutlined, EnvironmentOutlined, CreditCardOutlined, LeftOutlined, LoadingOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { message } from 'antd';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import axios from '../utils/axios';
 import '../styles/checkout-page.css';
 
@@ -38,9 +39,7 @@ const emptyAddress = {
 };
 
 const paymentMethods = [
-  { id: 'upi', label: 'UPI', desc: 'Google Pay, PhonePe, Paytm' },
-  { id: 'card', label: 'Credit / Debit Card', desc: 'Visa, Mastercard, RuPay' },
-  { id: 'netbanking', label: 'Net Banking', desc: 'All major banks' },
+  { id: 'razorpay', label: 'Pay Online', desc: 'UPI, Cards, Net Banking, Wallets' },
   { id: 'cod', label: 'Cash on Delivery', desc: 'Pay when delivered' },
 ];
 
@@ -48,6 +47,7 @@ const CheckoutPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { cartItems, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
 
   // Reservation from CartPage
   const reservationId = location.state?.reservationId;
@@ -192,6 +192,79 @@ const CheckoutPage = () => {
     }
   };
 
+  const buildOrderPayload = () => {
+    const deliveryCharge = totalPrice >= 500 ? 0 : 49;
+    const grandTotal = totalPrice + deliveryCharge;
+    return {
+      items: cartItems.map((item) => ({
+        product: item.id,
+        name: item.name,
+        price: item.price,
+        discount: item.discount || 0,
+        image: item.image,
+        quantity: item.quantity,
+      })),
+      shippingAddress: address,
+      itemsTotal: totalPrice,
+      deliveryCharge,
+      grandTotal,
+      reservationId,
+    };
+  };
+
+  const handleRazorpayPayment = async (orderPayload) => {
+    // 1. Create Razorpay order on backend
+    const { data } = await axios.post('/orders/create-razorpay-order', {
+      grandTotal: orderPayload.grandTotal,
+      reservationId,
+    });
+
+    const { orderId: razorpayOrderId, amount, currency, keyId } = data.data;
+
+    // 2. Open Razorpay checkout
+    return new Promise((resolve, reject) => {
+      const options = {
+        key: keyId,
+        amount,
+        currency,
+        name: 'E-commerce App',
+        description: `Order Payment`,
+        order_id: razorpayOrderId,
+        prefill: {
+          name: user?.name || address.fullName,
+          email: user?.email || '',
+          contact: address.phone,
+        },
+        theme: { color: '#111' },
+        handler: async (response) => {
+          try {
+            // 3. Verify payment & create order
+            const verifyRes = await axios.post('/orders/verify-payment', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              ...orderPayload,
+            });
+            resolve(verifyRes);
+          } catch (err) {
+            reject(err);
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            reject(new Error('Payment cancelled by user'));
+          },
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        reject(new Error(response.error?.description || 'Payment failed'));
+      });
+      rzp.open();
+    });
+  };
+
   const handlePlaceOrder = async () => {
     // Validate address
     if (showAddressForm || savedAddresses.length === 0) {
@@ -213,33 +286,26 @@ const CheckoutPage = () => {
     // Save selected address
     localStorage.setItem(SELECTED_ADDRESS_KEY, JSON.stringify(address));
 
-    const deliveryCharge = totalPrice >= 500 ? 0 : 49;
-    const grandTotal = totalPrice + deliveryCharge;
-
-    // Build order payload
-    const orderPayload = {
-      items: cartItems.map((item) => ({
-        product: item.id,
-        name: item.name,
-        price: item.price,
-        discount: item.discount || 0,
-        image: item.image,
-        quantity: item.quantity,
-      })),
-      shippingAddress: address,
-      paymentMethod: selectedPayment,
-      itemsTotal: totalPrice,
-      deliveryCharge,
-      grandTotal,
-      reservationId,
-    };
+    const orderPayload = buildOrderPayload();
 
     setPlacingOrder(true);
     try {
       // Mark refs BEFORE the API call so no cleanup can interfere
       releasedRef.current = true;
       orderPlacedRef.current = true;
-      const res = await axios.post('/orders', orderPayload);
+
+      let res;
+      if (selectedPayment === 'razorpay') {
+        // Online payment via Razorpay
+        res = await handleRazorpayPayment(orderPayload);
+      } else {
+        // COD order
+        res = await axios.post('/orders', {
+          ...orderPayload,
+          paymentMethod: 'cod',
+        });
+      }
+
       setOrderId(res.data.data._id);
       setOrderPlaced(true);
       clearCart();
@@ -247,7 +313,10 @@ const CheckoutPage = () => {
       // If order fails, allow release again
       releasedRef.current = false;
       orderPlacedRef.current = false;
-      message.error(err.response?.data?.message || 'Failed to place order. Please try again.');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to place order. Please try again.';
+      if (errorMsg !== 'Payment cancelled by user') {
+        message.error(errorMsg);
+      }
     } finally {
       setPlacingOrder(false);
     }
