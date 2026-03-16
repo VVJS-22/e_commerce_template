@@ -22,6 +22,16 @@ class AuthService {
     return response.data;
   }
 
+  // Guest login
+  async guestLogin() {
+    const response = await axios.post('/auth/guest');
+    if (response.data.token) {
+      localStorage.setItem('token', response.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.user));
+    }
+    return response.data;
+  }
+
   // Logout user
   logout() {
     localStorage.removeItem('token');

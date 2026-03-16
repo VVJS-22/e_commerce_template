@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 const { verificationEmail } = require('../utils/emailTemplates/verificationEmail');
@@ -124,16 +125,6 @@ exports.login = async (req, res) => {
       return res.status(401).json({
         success: false,
         message: 'Invalid credentials'
-      });
-    }
-    
-    // Check if email is verified
-    if (!user.emailVerified) {
-      logger.warn(`Login failed - email not verified: ${email}`);
-      return res.status(403).json({
-        success: false,
-        message: 'Please verify your email before logging in. Check your inbox for the verification link.',
-        emailNotVerified: true
       });
     }
     
@@ -476,6 +467,38 @@ exports.deleteAccount = async (req, res) => {
   }
 };
 
+// @desc    Login as guest (no account needed)
+// @route   POST /api/auth/guest
+// @access  Public
+exports.guestLogin = async (req, res) => {
+  try {
+    const guestId = `guest_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const token = jwt.sign(
+      { id: guestId, role: 'guest' },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    );
+
+    logger.info(`Guest login: ${guestId}`);
+
+    res.status(200).json({
+      success: true,
+      token,
+      user: {
+        id: guestId,
+        name: 'Guest',
+        email: null,
+        role: 'guest',
+        emailVerified: false,
+        isGuest: true
+      }
+    });
+  } catch (error) {
+    logger.error(`Guest login error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Guest login failed' });
+  }
+};
+
 // Helper function to get token from model, create cookie and send response
 const sendTokenResponse = (user, statusCode, res) => {
   // Create token
@@ -499,7 +522,8 @@ const sendTokenResponse = (user, statusCode, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role
+      role: user.role,
+      emailVerified: user.emailVerified
     }
   });
 };

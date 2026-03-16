@@ -1,18 +1,43 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DeleteOutlined, MinusOutlined, PlusOutlined, ShoppingCartOutlined, LoadingOutlined, WarningOutlined, CloseOutlined } from '@ant-design/icons';
-import { message } from 'antd';
+import { message, Modal } from 'antd';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import axios from '../utils/axios';
 import '../styles/cart-page.css';
 
 const CartPage = () => {
   const navigate = useNavigate();
   const { cartItems, addToCart, removeFromCart, deleteFromCart, clearCart, totalItems, totalPrice } = useCart();
+  const { isGuest, emailVerified, user } = useAuth();
   const [reserving, setReserving] = useState(false);
-  const [blockedProducts, setBlockedProducts] = useState(null); // { message, items: [{id, name, reason}] }
+  const [blockedProducts, setBlockedProducts] = useState(null);
 
   const attemptCheckout = async (items) => {
+    // Gate: guest users → prompt to create account
+    if (isGuest) {
+      Modal.confirm({
+        title: 'Account Required',
+        content: 'Please create an account to proceed with checkout. Your cart will be saved.',
+        okText: 'Create Account',
+        cancelText: 'Cancel',
+        onOk: () => navigate('/register'),
+      });
+      return;
+    }
+
+    // Gate: unverified email → prompt to verify
+    if (!emailVerified) {
+      Modal.confirm({
+        title: 'Email Verification Required',
+        content: 'Please verify your email address to proceed with checkout. Check your inbox for the verification link.',
+        okText: 'OK',
+        cancelText: 'Cancel',
+      });
+      return;
+    }
+
     setReserving(true);
     setBlockedProducts(null);
     try {

@@ -159,9 +159,43 @@ const AdminOrders = () => {
     },
   ];
 
-  const expandedRowRender = (record) => (
-    <div style={{ padding: '8px 0' }}>
-      <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
+  const expandedRowRender = (record) => {
+    const addr = record.shippingAddress || {};
+    const user = record.user || {};
+    const addressLine = [addr.addressLine1, addr.addressLine2].filter(Boolean).join(', ');
+    const cityLine = [addr.city, addr.state, addr.pincode].filter(Boolean).join(', ');
+
+    return (
+      <div style={{ padding: '8px 0' }}>
+        {/* Customer & Shipping Details */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 32, marginBottom: 16, fontSize: 13 }}>
+          <div>
+            <div style={{ color: '#888', fontWeight: 600, marginBottom: 4 }}>Customer</div>
+            <div>{user.name || '—'}</div>
+            <div style={{ color: '#555' }}>{user.email || '—'}</div>
+          </div>
+          <div>
+            <div style={{ color: '#888', fontWeight: 600, marginBottom: 4 }}>Shipping Address</div>
+            <div>{addr.fullName}</div>
+            <div style={{ color: '#555' }}>{addressLine}</div>
+            <div style={{ color: '#555' }}>{cityLine}</div>
+          </div>
+          <div>
+            <div style={{ color: '#888', fontWeight: 600, marginBottom: 4 }}>Phone</div>
+            <div>{addr.phone || '—'}</div>
+          </div>
+          <div>
+            <div style={{ color: '#888', fontWeight: 600, marginBottom: 4 }}>Payment</div>
+            <div>{paymentLabels[record.paymentMethod] || record.paymentMethod}</div>
+          </div>
+          <div>
+            <div style={{ color: '#888', fontWeight: 600, marginBottom: 4 }}>Ordered On</div>
+            <div>{new Date(record.createdAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+          </div>
+        </div>
+
+        {/* Items Table */}
+        <table style={{ width: '100%', fontSize: 13, borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid #f0f0f0', color: '#888' }}>
             <th style={{ textAlign: 'left', padding: 6 }}>Product</th>
@@ -203,7 +237,8 @@ const AdminOrders = () => {
         </tfoot>
       </table>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="admin-page">

@@ -3,6 +3,7 @@ const User = require('../models/User');
 const logger = require('../utils/logger');
 
 // Protect routes - authentication middleware
+// Supports both real users and guest tokens
 exports.protect = async (req, res, next) => {
   let token;
   
@@ -26,6 +27,21 @@ exports.protect = async (req, res, next) => {
   try {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Handle guest tokens (id starts with "guest_")
+    if (decoded.role === 'guest') {
+      req.user = {
+        _id: decoded.id,
+        id: decoded.id,
+        name: 'Guest',
+        email: null,
+        role: 'guest',
+        emailVerified: false,
+        isGuest: true
+      };
+      logger.debug(`Authenticated guest: ${decoded.id}`);
+      return next();
+    }
     
     req.user = await User.findById(decoded.id);
     
@@ -60,4 +76,25 @@ exports.authorize = (...roles) => {
     }
     next();
   };
+};
+
+// Require verified email (blocks guests and unverified users)
+exports.requireVerifiedEmail = (req, res, next) => {
+  if (req.user.isGuest) {
+    return res.status(403).json({
+      success: false,
+      message: 'Please create an account to proceed with checkout.',
+      requiresAccount: true
+    });
+  }
+
+  if (!req.user.emailVerified) {
+    return res.status(403).json({
+      success: false,
+      message: 'Please verify your email to proceed with checkout.',
+      requiresVerification: true
+    });
+  }
+
+  next();
 };

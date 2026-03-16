@@ -10,7 +10,7 @@ const { Header: AntHeader } = Layout;
 const { Text } = Typography;
 
 const Header = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, isGuest } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
 
@@ -29,49 +29,79 @@ const Header = () => {
     });
   };
 
-  const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: user?.email,
-      disabled: true,
-    },
-    {
-      type: 'divider',
-    },
-    {
-      key: 'orders',
-      icon: <HistoryOutlined />,
-      label: 'Order History',
-      onClick: () => navigate('/orders'),
-    },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-      onClick: () => navigate('/settings'),
-    },
-    ...(user?.role === 'admin'
-      ? [
-          {
-            key: 'admin',
-            icon: <SettingOutlined />,
-            label: 'Admin Panel',
-            onClick: () => navigate('/admin'),
-          },
-        ]
-      : []),
-    {
-      type: 'divider',
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Logout',
-      danger: true,
-      onClick: handleLogout,
-    },
-  ];
+  const userMenuItems = isGuest
+    ? [
+        {
+          key: 'guest-label',
+          icon: <UserOutlined />,
+          label: 'Browsing as Guest',
+          disabled: true,
+        },
+        { type: 'divider' },
+        {
+          key: 'login',
+          icon: <UserOutlined />,
+          label: 'Sign In',
+          onClick: () => navigate('/login'),
+        },
+        {
+          key: 'register',
+          icon: <UserOutlined />,
+          label: 'Create Account',
+          onClick: () => navigate('/register'),
+        },
+        { type: 'divider' },
+        {
+          key: 'logout',
+          icon: <LogoutOutlined />,
+          label: 'Exit Guest Mode',
+          danger: true,
+          onClick: handleLogout,
+        },
+      ]
+    : [
+        {
+          key: 'profile',
+          icon: <UserOutlined />,
+          label: user?.email,
+          disabled: true,
+        },
+        {
+          type: 'divider',
+        },
+        {
+          key: 'orders',
+          icon: <HistoryOutlined />,
+          label: 'Order History',
+          onClick: () => navigate('/orders'),
+        },
+        {
+          key: 'settings',
+          icon: <SettingOutlined />,
+          label: 'Settings',
+          onClick: () => navigate('/settings'),
+        },
+        ...(user?.role === 'admin'
+          ? [
+              {
+                key: 'admin',
+                icon: <SettingOutlined />,
+                label: 'Admin Panel',
+                onClick: () => navigate('/admin'),
+              },
+            ]
+          : []),
+        {
+          type: 'divider',
+        },
+        {
+          key: 'logout',
+          icon: <LogoutOutlined />,
+          label: 'Logout',
+          danger: true,
+          onClick: handleLogout,
+        },
+      ];
 
   return (
     <AntHeader className="app-header">

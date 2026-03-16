@@ -28,10 +28,11 @@ yarn-error.log*
 
 # Ignore build outputs
 build/
-dist/
 
-# But include production dist (pre-built locally)
+# Ignore dist everywhere except the pre-built production artifacts
+dist/
 !backend/dist/
-!frontend/dist/
+backend/dist/*.log
 backend/dist/logs/
 backend/dist/*.map
+!frontend/dist/

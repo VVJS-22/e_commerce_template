@@ -1,16 +1,21 @@
 const rateLimit = require('express-rate-limit');
 const logger = require('../utils/logger');
 
+const isDev = process.env.NODE_ENV !== 'production';
+
+// No-op middleware for dev mode
+const passthrough = (req, res, next) => next();
+
 // Log when a user is rate-limited
 const logLimited = (req, res, options) => {
   logger.warn(`Rate limit exceeded: ${req.ip} → ${req.method} ${req.originalUrl}`);
 };
 
 // ─── Global API limiter ─────────────────────────────────────
-// 100 requests per 15 minutes per IP across all routes
+// 500 requests per 15 minutes per IP across all routes
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: 500,
   standardHeaders: true,    // Return rate limit info in `RateLimit-*` headers
   legacyHeaders: false,     // Disable `X-RateLimit-*` headers
   handler: (req, res, next, options) => {
@@ -87,9 +92,9 @@ const uploadLimiter = rateLimit({
 });
 
 module.exports = {
-  globalLimiter,
-  authLimiter,
-  sensitiveOpsLimiter,
-  orderLimiter,
-  uploadLimiter,
+  globalLimiter:      isDev ? passthrough : globalLimiter,
+  authLimiter:        isDev ? passthrough : authLimiter,
+  sensitiveOpsLimiter: isDev ? passthrough : sensitiveOpsLimiter,
+  orderLimiter:       isDev ? passthrough : orderLimiter,
+  uploadLimiter:      isDev ? passthrough : uploadLimiter,
 };

@@ -4,7 +4,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import axios from '../../utils/axios';
 import ImageUpload from '../../components/admin/ImageUpload';
 
-const { TextArea } = Input;
+
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
@@ -210,9 +210,6 @@ const AdminProducts = () => {
           </div>
           <Form.Item name="image" label="Image" rules={[{ required: true, message: 'Required' }]}>
             <ImageUpload folder="products" />
-          </Form.Item>
-          <Form.Item name="description" label="Description">
-            <TextArea rows={2} placeholder="Optional description" />
           </Form.Item>
           <Form.Item name="isActive" label="Active" valuePropName="checked">
             <Switch />

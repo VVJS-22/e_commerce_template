@@ -76,7 +76,6 @@ const AdminCategories = () => {
       ),
     },
     { title: 'Name', dataIndex: 'name', sorter: (a, b) => a.name.localeCompare(b.name) },
-    { title: 'Slug', dataIndex: 'slug', responsive: ['md'] },
     {
       title: 'Order',
       dataIndex: 'sortOrder',
@@ -136,9 +135,6 @@ const AdminCategories = () => {
         <Form form={form} layout="vertical" requiredMark="optional">
           <Form.Item name="name" label="Name" rules={[{ required: true, message: 'Required' }]}>
             <Input placeholder="e.g. Hot Wheels" />
-          </Form.Item>
-          <Form.Item name="slug" label="Slug" rules={[{ required: true, message: 'Required' }]}>
-            <Input placeholder="e.g. hotwheels" disabled={!!editing} />
           </Form.Item>
           <Form.Item name="image" label="Image" rules={[{ required: true, message: 'Required' }]}>
             <ImageUpload folder="categories" />

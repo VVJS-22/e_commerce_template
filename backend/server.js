@@ -68,7 +68,7 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Trust proxy (needed for rate limiting behind reverse proxies like Render/Railway)
+// Trust proxy (needed for rate limiting behind reverse proxies like Fly.io/Render/Railway)
 app.set('trust proxy', 1);
 
 // Global rate limiter — 100 req / 15 min per IP
@@ -133,6 +133,11 @@ const server = app.listen(PORT, () => {
       }
     }, INTERVAL);
     logger.info('Keep-alive self-ping enabled');
+  }
+
+  // ─── Fly.io logging ───────────────────────────────────────
+  if (process.env.FLY_APP_NAME) {
+    logger.info(`Running on Fly.io app: ${process.env.FLY_APP_NAME}, region: ${process.env.FLY_REGION || 'unknown'}`);
   }
 });
 

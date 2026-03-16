@@ -1,12 +1,14 @@
-import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useRef } from 'react';
 import { message } from 'antd';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
-const CART_STORAGE_KEY = 'cw_cart';
 
-const loadCart = () => {
+const getCartKey = (userId) => `cw_cart_${userId || 'anon'}`;
+
+const loadCart = (userId) => {
   try {
-    const data = localStorage.getItem(CART_STORAGE_KEY);
+    const data = localStorage.getItem(getCartKey(userId));
     return data ? JSON.parse(data) : [];
   } catch {
     return [];
@@ -22,11 +24,52 @@ export const useCart = () => {
 };
 
 export const CartProvider = ({ children }) => {
-  const [cartItems, setCartItems] = useState(loadCart);
+  const { user } = useAuth();
+  const userId = user?.id || null;
+  const prevUserIdRef = useRef(userId);
+  const [cartItems, setCartItems] = useState(() => loadCart(userId));
+
+  // When user changes, migrate guest cart → new user if applicable
+  useEffect(() => {
+    const prevUserId = prevUserIdRef.current;
+    prevUserIdRef.current = userId;
+
+    if (prevUserId === userId) return;
+
+    // Guest → real user: migrate cart items
+    const wasGuest = typeof prevUserId === 'string' && prevUserId.startsWith('guest_');
+    // Also check for saved guest ID (from register flow: guest → logout → register → login)
+    const savedGuestId = localStorage.getItem('cw_prev_guest_id');
+    const guestId = wasGuest ? prevUserId : savedGuestId;
+
+    if (guestId && userId && !String(userId).startsWith('guest_')) {
+      const guestCart = loadCart(guestId);
+      const newUserCart = loadCart(userId);
+
+      // Clean up saved guest ID
+      if (savedGuestId) localStorage.removeItem('cw_prev_guest_id');
+
+      if (guestCart.length > 0) {
+        // Merge: new user's existing items take priority, add guest-only items
+        const merged = [...newUserCart];
+        for (const guestItem of guestCart) {
+          if (!merged.find((item) => item.id === guestItem.id)) {
+            merged.push(guestItem);
+          }
+        }
+        setCartItems(merged);
+        // Clean up guest cart
+        localStorage.removeItem(getCartKey(guestId));
+        return;
+      }
+    }
+
+    setCartItems(loadCart(userId));
+  }, [userId]);
 
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
-  }, [cartItems]);
+    localStorage.setItem(getCartKey(userId), JSON.stringify(cartItems));
+  }, [cartItems, userId]);
 
   const addToCart = (product) => {
     const stock = product.stock ?? Infinity;

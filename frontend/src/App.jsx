@@ -4,6 +4,7 @@ import { ConfigProvider } from 'antd';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import PrivateRoute from './components/PrivateRoute';
+import GuestRoute from './components/GuestRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -41,10 +42,10 @@ function App() {
         <CartProvider>
           <Router>
             <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/forgot-password" element={<ForgotPassword />} />
-              <Route path="/reset-password/:token" element={<ResetPassword />} />
+              <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
+              <Route path="/register" element={<GuestRoute><Register /></GuestRoute>} />
+              <Route path="/forgot-password" element={<GuestRoute><ForgotPassword /></GuestRoute>} />
+              <Route path="/reset-password/:token" element={<GuestRoute><ResetPassword /></GuestRoute>} />
               <Route path="/verify-email/:token" element={<VerifyEmail />} />
               <Route
                 element={

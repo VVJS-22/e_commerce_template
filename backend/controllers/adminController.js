@@ -105,12 +105,13 @@ exports.getCategories = async (req, res) => {
 // @route   POST /api/admin/categories
 exports.createCategory = async (req, res) => {
   try {
-    const category = await Category.create(req.body);
+    const { slug, ...categoryData } = req.body; // ignore any slug from client
+    const category = await Category.create(categoryData);
     logger.info(`Category created: ${category.slug} by ${req.user.email}`);
     res.status(201).json({ success: true, data: category });
   } catch (err) {
     if (err.code === 11000) {
-      return res.status(400).json({ success: false, message: 'Category slug already exists' });
+      return res.status(400).json({ success: false, message: 'A category with this name already exists' });
     }
     logger.error(`Admin createCategory: ${err.message}`);
     res.status(400).json({ success: false, message: err.message });
